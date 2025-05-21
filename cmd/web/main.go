@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"tritontube/internal/web"
 )
@@ -55,10 +56,27 @@ func main() {
 	}
 
 	// Construct metadata service
-	var metadataService web.VideoMetadataService
+	var (
+		metadataService web.VideoMetadataService
+		err			 error
+	)
 	fmt.Println("Creating metadata service of type", metadataServiceType, "with options", metadataServiceOptions)
-	// TODO: Implement metadata service creation logic
+	switch metadataServiceType {
+	case "sqlite":
+		// metadataServiceOptions is your file-path e.g. "meta.db"
+		metadataService, err = web.NewSQLiteVideoMetadataService(metadataServiceOptions) //web.NewSQLiteVideoMetadataService is exported from web package and imported here "tritontube/internal/web"
+		if err != nil {
+			log.Fatalf("failed to open sqlite store %q: %v", metadataServiceOptions, err)
+		}
+	case "etcd":
+		panic("Lab 7: not implemented")
+	default:
+		fmt.Println("Error: Unknown metadata service type:", metadataServiceType)
+		return
+	}
 
+
+	// Construct content service
 	// Construct content service
 	var contentService web.VideoContentService
 	fmt.Println("Creating content service of type", contentServiceType, "with options", contentServiceOptions)
