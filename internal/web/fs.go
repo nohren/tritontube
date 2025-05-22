@@ -5,6 +5,7 @@
 package web
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -25,7 +26,7 @@ var _ VideoContentService = (*FSVideoContentService)(nil)
 func NewFSVideoContentService(baseDir string) *FSVideoContentService {
 	// create the base directory if it doesn't exist
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		panic(err)
+		log.Print(err)
 	}
 	return &FSVideoContentService{baseDir: baseDir}
 }
