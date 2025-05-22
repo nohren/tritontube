@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -223,8 +224,25 @@ func (s *server) handleVideoContent(w http.ResponseWriter, r *http.Request) {
 	// read the content from the content service
 	// the content service stores many file chunks for the video
 	// how does the content service know which file to read?
-	// is this client directed?
+	// this isclient directed. So those details are on the client side
 
+	data, err := s.contentService.Read(videoId, filename)
+	if err != nil {
+		http.Error(w, "could not read content", http.StatusInternalServerError)
+		return
+	}
+	// Set a reasonable Content-Type based on file extension
+	mimeType := mime.TypeByExtension(filepath.Ext(filename))
+	if mimeType == "" {
+		if strings.HasSuffix(filename, ".mpd") {
+			mimeType = "application/dash+xml"
+		} else {
+			mimeType = "application/octet-stream"
+		}
+	}
+	w.Header().Set("Content-Type", mimeType)
+	// Write the raw bytes
+	w.Write(data)
 }
 
 func encodeVideo(videoFile *os.File, outputPath string) error {
