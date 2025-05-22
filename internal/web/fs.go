@@ -23,6 +23,10 @@ var _ VideoContentService = (*FSVideoContentService)(nil)
 
 // NewFSVideoContentService returns a filesystem-based content service rooted at baseDir.
 func NewFSVideoContentService(baseDir string) *FSVideoContentService {
+	// create the base directory if it doesn't exist
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		panic(err)
+	}
 	return &FSVideoContentService{baseDir: baseDir}
 }
 
