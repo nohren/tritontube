@@ -77,10 +77,18 @@ func main() {
 
 
 	// Construct content service
-	// Construct content service
 	var contentService web.VideoContentService
 	fmt.Println("Creating content service of type", contentServiceType, "with options", contentServiceOptions)
-	// TODO: Implement content service creation logic
+	switch contentServiceType {
+	case "fs":
+		// contentServiceOptions is your base-dir e.g. "/path/to/videos"
+		contentService = web.NewFSVideoContentService(contentServiceOptions) 
+	case "nw":
+		panic("Lab 7: not implemented")
+	default:
+		fmt.Println("Error: Unknown content service type:", contentServiceType)
+		return
+	}
 
 	// Start the server
 	server := web.NewServer(metadataService, contentService)
