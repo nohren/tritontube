@@ -4,15 +4,13 @@
 
 `go run ./cmd/web/main.go -port 8080 sqlite meta.db fs ./storage`
 
-# Project 7 - SQLite and Local FS
+# Project 8 - Distributed video storage
 
-Files pertaining to lab 7
-internal/
+Files pertaining to lab 8
 
-- fs.go
-- server.go
-- SQLite.go
-- templates.go
+nw.go
+server.go
+proto files
 
 web/
 
@@ -64,9 +62,7 @@ MPEG-DASH
 
 ## Non-persistent storage
 
-SQ-lite to store metadata
-
-For this project, it is sufficient to create a single table that can store video IDs and upload dates
+see nw.go
 
 ## interfaces / webserver
 
