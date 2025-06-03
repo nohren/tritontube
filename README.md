@@ -1,5 +1,9 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/e5W8wwsN)
 
+# Docs
+
+https://docs.google.com/document/d/1izFnibGVxzNRgpKl3RKt6_4gy64cN0ZEX8_GPLniasE/edit?tab=t.x8vofnrgqex1#heading=h.tee8x89zfyvi
+
 # Launch server
 
 `go run ./cmd/web/main.go -port 8080 sqlite meta.db fs ./storage`
