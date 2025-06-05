@@ -6,7 +6,25 @@ https://docs.google.com/document/d/1izFnibGVxzNRgpKl3RKt6_4gy64cN0ZEX8_GPLniasE/
 
 # Launch server
 
-`go run ./cmd/web/main.go -port 8080 sqlite meta.db fs ./storage`
+<!-- `go run ./cmd/web/main.go -port 8080 sqlite meta.db fs ./storage` -->
+
+`go run ./cmd/storage -host localhost -port 8090 "./storage/8090"`
+
+```
+mkdir -p storage/8090 storage/8091 storage/8092
+
+go run ./cmd/storage -port 8090 "./storage/8090" # storage 8090
+go run ./cmd/storage -port 8091 "./storage/8091" # storage 8091
+go run ./cmd/storage -port 8092 "./storage/8092" # storage 8092
+
+go run ./cmd/web \
+    sqlite "./metadata.db" \
+    nw     "localhost:8081,localhost:8090,localhost:8091,localhost:8092"
+
+
+```
+
+# gRPC
 
 # Project 8 - Distributed video storage
 
@@ -16,13 +34,15 @@ nw.go
 server.go
 proto files
 
-web/
+Objectives for lab 8
 
-- main.go
-
-Objectives for lab 7
-
--
+- modify ./cmd/web/main.go to support the nw video content type...
+  - nw, it takes a string in the following format as CONTENT_OPTIONS: adminhost:adminport,contenthost1:contentport1,contenthost2:contentport2
+  - first server in csv's, is the web server, the rest are storage servers nobo
+- upload - Replace FSVideoContentService with NWVideoContentService - which saves each file to one of the storage servers using consistent hashing.
+- view - When a user requests a video file, NWVideoContentService use consistent hashing to find it and retrieve it.
+- adding/removing storage servers (fault tolerancy?) - done via admin cli - admin cli sends a request to the gRPC server running in tandem with HTTP server. This updates the list of storage servers and web server need to migrate files based on updated hash ring. Basically to accurate react to topology change.
+  - this seems more about moving files around and changing hash ring. Not about stopping and starting servers.
 
 # High level
 

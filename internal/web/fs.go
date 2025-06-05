@@ -54,3 +54,14 @@ func (s *FSVideoContentService) Read(videoId, filename string) ([]byte, error) {
 	path := filepath.Join(s.baseDir, videoId, filename)
 	return os.ReadFile(path)
 }
+
+func (s *FSVideoContentService) Delete(videoId, filename string) error {
+	path := filepath.Join(s.baseDir, videoId, filename)
+	if err := os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil // File does not exist, return nil
+		}
+		return err // Return any other error
+	}
+	return nil // Successfully deleted
+}

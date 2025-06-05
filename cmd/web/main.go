@@ -58,7 +58,7 @@ func main() {
 	// Construct metadata service
 	var (
 		metadataService web.VideoMetadataService
-		err			 error
+		err             error
 	)
 	fmt.Println("Creating metadata service of type", metadataServiceType, "with options", metadataServiceOptions)
 	switch metadataServiceType {
@@ -69,12 +69,11 @@ func main() {
 			log.Fatalf("failed to open sqlite store %q: %v", metadataServiceOptions, err)
 		}
 	case "etcd":
-		panic("Lab 7: not implemented")
+		panic("Lab 9: not implemented")
 	default:
 		fmt.Println("Error: Unknown metadata service type:", metadataServiceType)
 		return
 	}
-
 
 	// Construct content service
 	var contentService web.VideoContentService
@@ -82,9 +81,9 @@ func main() {
 	switch contentServiceType {
 	case "fs":
 		// contentServiceOptions is your base-dir e.g. "/path/to/videos"
-		contentService = web.NewFSVideoContentService(contentServiceOptions) 
+		contentService = web.NewFSVideoContentService(contentServiceOptions)
 	case "nw":
-		panic("Lab 7: not implemented")
+		contentService = web.NewNWVideoContentService(contentServiceOptions)
 	default:
 		fmt.Println("Error: Unknown content service type:", contentServiceType)
 		return

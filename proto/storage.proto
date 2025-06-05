@@ -1,0 +1,41 @@
+syntax = "proto3";
+package storage;
+
+option go_package = "internal/proto/storage;storagepb";
+
+// The StorageService provides methods to manage file storage. These are the api endpoints where we communicate back and forth with the storage service.
+service StorageService {
+    // Uploads a file to the storage service.
+    rpc UploadFile(UploadRequest) returns (UploadResponse);
+    
+    // Downloads a file from the storage service.
+    rpc DownloadFile(DownloadRequest) returns (DownloadResponse);
+    
+    // Deletes a file from the storage service.
+    rpc DeleteFile(DeleteRequest) returns (DeleteResponse);
+}
+
+message UploadRequest {
+    string key = 1; // Name of the file to upload
+    bytes data = 2; // Content of the file
+}
+
+message UploadResponse {
+    bool success = 1; // Indicates if the upload was successful
+}
+
+message DownloadRequest {
+    string key = 1; // Name of the file to download
+}
+
+message DownloadResponse {
+    bool found = 1; // Indicates if the file was found
+    bytes data = 2; // Content of the file
+}
+
+message DeleteRequest {
+    string key = 1; // Name of the file to delete
+}
+message DeleteResponse {
+    bool success = 1; // Indicates if the deletion was successful
+}
