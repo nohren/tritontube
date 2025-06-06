@@ -98,6 +98,17 @@ func (s *server) DeleteFile(ctx context.Context, req *storagepb.DeleteRequest) (
 	return &storagepb.DeleteResponse{Success: true}, nil
 }
 
+func (s *server) ListFiles(ctx context.Context, req *storagepb.ListFilesRequest) (*storagepb.ListFilesResponse, error) {
+	keys, err := s.fs.ListAll()
+	if err != nil {
+		log.Printf("Error listing files: %v", err)
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+	return &storagepb.ListFilesResponse{
+		Keys: keys,
+	}, nil
+}
+
 func main() {
 	host := flag.String("host", "localhost", "Host address for the server")
 	port := flag.Int("port", 8090, "Port number for the server")

@@ -20,6 +20,8 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+// admin interface gRPC remote procedure calls for controlling NW video content service servers
+
 type server struct {
 	Addr string
 	Port int

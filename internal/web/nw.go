@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -26,13 +27,17 @@ type ConsistentHashRing struct {
 
 // NWVideoContentService implements VideoContentService using a network of nodes.
 type NWVideoContentService struct {
-	ring         *ConsistentHashRing
+	Ring         *ConsistentHashRing
 	storageConns map[string]storagepb.StorageServiceClient
 	mu           sync.Mutex // To protect concurrent access to storageConns
 }
 
 // Uncomment the following line to ensure NetworkVideoContentService implements VideoContentService
 var _ VideoContentService = (*NWVideoContentService)(nil)
+
+func ComposeKey(videoId, filename string) string {
+	return fmt.Sprintf("%s/%s", videoId, filename)
+}
 
 // routes Read/Write calls over gRPC to one of N storage nodes via consistent hashing.
 func NewNWVideoContentService(contentOptions string) *NWVideoContentService {
@@ -67,16 +72,29 @@ func NewNWVideoContentService(contentOptions string) *NWVideoContentService {
 
 	//dial each node once and store the client stub
 	return &NWVideoContentService{
-		ring:         ring,
+		Ring:         ring,
 		storageConns: conns, // Store the gRPC clients for each node
 	}
+}
+
+func (s *NWVideoContentService) DeleteFile(videoId string, filename string, nodeAddr string) error {
+	//get the gRPC server stub
+	client := s.storageConns[nodeAddr]
+
+	// run gRPC call on server
+	//fs operations at videoId/filename
+	//baseDir provided by the server
+	_, err := client.DeleteFile(context.Background(), &storagepb.DeleteRequest{
+		Key: ComposeKey(videoId, filename), // use key as the identifier for the file
+	})
+	return err
 }
 
 // Identify the write node based on consistent hashing
 // write to it
 func (s *NWVideoContentService) Write(videoId, filename string, data []byte) error {
 	key := fmt.Sprintf("%s/%s", videoId, filename) // Create a key based on videoId and filename
-	nodeAddr, err := s.ring.GetNodeForKey(key)     // Get the node address for the key
+	nodeAddr, err := s.Ring.GetNodeForKey(key)     // Get the node address for the key
 	if err != nil {
 		return fmt.Errorf("no nodes in this ring.  failed to get node for key %s: %v", key, err)
 	}
@@ -94,10 +112,47 @@ func (s *NWVideoContentService) Write(videoId, filename string, data []byte) err
 	return err
 }
 
+// ListChunks lists all chunks for a given server addr
+// we need this for add and remove server so we can reassign chunks
+func (s *NWVideoContentService) ListChunkNames(nodeAddr string) ([]string, error) {
+	s.mu.Lock()
+	client, exists := s.storageConns[nodeAddr]
+	s.mu.Unlock()
+	if !exists {
+		return nil, fmt.Errorf("node %q not found in storage connections", nodeAddr)
+	}
+	// Call the ListFiles RPC on that storage node
+	resp, err := client.ListFiles(context.Background(), &storagepb.ListFilesRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("ListFiles RPC to %s failed: %v", nodeAddr, err)
+	}
+
+	return resp.GetKeys(), nil
+}
+
+// Read gets the content
+func (s *NWVideoContentService) ReadFromNode(videoId, filename string, nodeAddr string) ([]byte, error) {
+	key := fmt.Sprintf("%s/%s", videoId, filename) // Create a key based on videoId and filename
+
+	//get the gRPC client for the node
+	client := s.storageConns[nodeAddr]
+	resp, err := client.DownloadFile(context.Background(), &storagepb.DownloadRequest{
+		Key: key, // use key as the identifier for the file
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file %s from node %s: %v", key, nodeAddr, err)
+	}
+	if !resp.Found {
+		return nil, fmt.Errorf("file %s not found on node %s", key, nodeAddr)
+	}
+	return resp.Data, nil
+
+}
+
 // Read gets the content
 func (s *NWVideoContentService) Read(videoId, filename string) ([]byte, error) {
 	key := fmt.Sprintf("%s/%s", videoId, filename) // Create a key based on videoId and filename
-	nodeAddr, err := s.ring.GetNodeForKey(key)     // Get the node address for the key
+	nodeAddr, err := s.Ring.GetNodeForKey(key)     // Get the node address for the key
 	if err != nil {
 		return nil, fmt.Errorf("no nodes in this ring.  failed to get node for key %s: %v", key, err)
 	}
@@ -156,13 +211,13 @@ func (r *ConsistentHashRing) Remove(nodeAddr string) {
 	// Remove h from the slice
 	for i, v := range r.nodes {
 		if v == h {
-			r.nodes = append(r.nodes[:i], r.nodes[i+1:]...)
+			r.nodes = slices.Delete(r.nodes, i, i+1) // remove the hash from the nodes slice
 			break
 		}
 	}
 }
 
-// get node address for a given hashed key
+// given a hashed key h, find the smallest node n where n > h
 func (r *ConsistentHashRing) GetNodeForKey(key string) (string, error) {
 	h := hashStringToUint64(key) // hash the key to a uint64
 	r.mu.RLock()                 // lock the mutex to protect concurrent access
@@ -181,4 +236,15 @@ func (r *ConsistentHashRing) GetNodeForKey(key string) (string, error) {
 		idx = 0
 	}
 	return r.index[r.nodes[idx]], nil // return the node address for the hash at index idx
+}
+
+func (r *ConsistentHashRing) List() []string {
+	r.mu.RLock()         // lock the mutex to protect concurrent access
+	defer r.mu.RUnlock() // unlock the mutex when the function returns
+
+	nodes := make([]string, len(r.nodes))
+	for i, h := range r.nodes {
+		nodes[i] = r.index[h] // map the hash to the node address
+	}
+	return nodes
 }

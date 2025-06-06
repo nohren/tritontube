@@ -5,6 +5,7 @@
 package web
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -64,4 +65,29 @@ func (s *FSVideoContentService) Delete(videoId, filename string) error {
 		return err // Return any other error
 	}
 	return nil // Successfully deleted
+}
+
+func (s *FSVideoContentService) ListAll() ([]string, error) {
+	var keys []string
+	err := filepath.Walk(s.baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		// Compute the path relative to baseDir
+		rel, err := filepath.Rel(s.baseDir, path)
+		if err != nil {
+			return err
+		}
+		// Normalize to forward slashes
+		key := filepath.ToSlash(rel)
+		keys = append(keys, key)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ListFiles walk error: %v", err)
+	}
+	return keys, nil
 }

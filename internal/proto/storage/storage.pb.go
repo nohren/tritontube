@@ -301,6 +301,87 @@ func (x *DeleteResponse) GetSuccess() bool {
 	return false
 }
 
+type ListFilesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFilesRequest) Reset() {
+	*x = ListFilesRequest{}
+	mi := &file_storage_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFilesRequest) ProtoMessage() {}
+
+func (x *ListFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFilesRequest.ProtoReflect.Descriptor instead.
+func (*ListFilesRequest) Descriptor() ([]byte, []int) {
+	return file_storage_proto_rawDescGZIP(), []int{6}
+}
+
+type ListFilesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Each key is the string "videoID/filename" (or "videoID/subdir/file.m4s", etc.)
+	Keys          []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFilesResponse) Reset() {
+	*x = ListFilesResponse{}
+	mi := &file_storage_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFilesResponse) ProtoMessage() {}
+
+func (x *ListFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFilesResponse.ProtoReflect.Descriptor instead.
+func (*ListFilesResponse) Descriptor() ([]byte, []int) {
+	return file_storage_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListFilesResponse) GetKeys() []string {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
 var File_storage_proto protoreflect.FileDescriptor
 
 const file_storage_proto_rawDesc = "" +
@@ -319,13 +400,17 @@ const file_storage_proto_rawDesc = "" +
 	"\rDeleteRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"*\n" +
 	"\x0eDeleteResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess2\xd3\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x12\n" +
+	"\x10ListFilesRequest\"'\n" +
+	"\x11ListFilesResponse\x12\x12\n" +
+	"\x04keys\x18\x01 \x03(\tR\x04keys2\x97\x02\n" +
 	"\x0eStorageService\x12=\n" +
 	"\n" +
 	"UploadFile\x12\x16.storage.UploadRequest\x1a\x17.storage.UploadResponse\x12C\n" +
 	"\fDownloadFile\x12\x18.storage.DownloadRequest\x1a\x19.storage.DownloadResponse\x12=\n" +
 	"\n" +
-	"DeleteFile\x12\x16.storage.DeleteRequest\x1a\x17.storage.DeleteResponseB\"Z internal/proto/storage;storagepbb\x06proto3"
+	"DeleteFile\x12\x16.storage.DeleteRequest\x1a\x17.storage.DeleteResponse\x12B\n" +
+	"\tListFiles\x12\x19.storage.ListFilesRequest\x1a\x1a.storage.ListFilesResponseB\"Z internal/proto/storage;storagepbb\x06proto3"
 
 var (
 	file_storage_proto_rawDescOnce sync.Once
@@ -339,24 +424,28 @@ func file_storage_proto_rawDescGZIP() []byte {
 	return file_storage_proto_rawDescData
 }
 
-var file_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_storage_proto_goTypes = []any{
-	(*UploadRequest)(nil),    // 0: storage.UploadRequest
-	(*UploadResponse)(nil),   // 1: storage.UploadResponse
-	(*DownloadRequest)(nil),  // 2: storage.DownloadRequest
-	(*DownloadResponse)(nil), // 3: storage.DownloadResponse
-	(*DeleteRequest)(nil),    // 4: storage.DeleteRequest
-	(*DeleteResponse)(nil),   // 5: storage.DeleteResponse
+	(*UploadRequest)(nil),     // 0: storage.UploadRequest
+	(*UploadResponse)(nil),    // 1: storage.UploadResponse
+	(*DownloadRequest)(nil),   // 2: storage.DownloadRequest
+	(*DownloadResponse)(nil),  // 3: storage.DownloadResponse
+	(*DeleteRequest)(nil),     // 4: storage.DeleteRequest
+	(*DeleteResponse)(nil),    // 5: storage.DeleteResponse
+	(*ListFilesRequest)(nil),  // 6: storage.ListFilesRequest
+	(*ListFilesResponse)(nil), // 7: storage.ListFilesResponse
 }
 var file_storage_proto_depIdxs = []int32{
 	0, // 0: storage.StorageService.UploadFile:input_type -> storage.UploadRequest
 	2, // 1: storage.StorageService.DownloadFile:input_type -> storage.DownloadRequest
 	4, // 2: storage.StorageService.DeleteFile:input_type -> storage.DeleteRequest
-	1, // 3: storage.StorageService.UploadFile:output_type -> storage.UploadResponse
-	3, // 4: storage.StorageService.DownloadFile:output_type -> storage.DownloadResponse
-	5, // 5: storage.StorageService.DeleteFile:output_type -> storage.DeleteResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	6, // 3: storage.StorageService.ListFiles:input_type -> storage.ListFilesRequest
+	1, // 4: storage.StorageService.UploadFile:output_type -> storage.UploadResponse
+	3, // 5: storage.StorageService.DownloadFile:output_type -> storage.DownloadResponse
+	5, // 6: storage.StorageService.DeleteFile:output_type -> storage.DeleteResponse
+	7, // 7: storage.StorageService.ListFiles:output_type -> storage.ListFilesResponse
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -373,7 +462,7 @@ func file_storage_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_proto_rawDesc), len(file_storage_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

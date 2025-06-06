@@ -24,7 +24,23 @@ go run ./cmd/web \
 
 ```
 
+```
+go run ./cmd/admin add localhost:8081 localhost:8090
+go run ./cmd/admin remove localhost:8081 localhost:8090
+go run ./cmd/admin list localhost:8081
+```
+
 # gRPC
+
+```
+protoc \
+  --proto_path=proto \
+  --go_out=internal/proto/storage --go_opt=paths=source_relative \
+  --go-grpc_out=internal/proto/storage --go-grpc_opt=paths=source_relative \
+  proto/storage.proto
+
+
+```
 
 # Project 8 - Distributed video storage
 
