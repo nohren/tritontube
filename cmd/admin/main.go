@@ -92,7 +92,7 @@ func removeNode(client proto.VideoContentAdminServiceClient, nodeAddr string) {
 }
 
 func listNodes(client proto.VideoContentAdminServiceClient) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	response, err := client.ListNodes(ctx, &proto.ListNodesRequest{})
