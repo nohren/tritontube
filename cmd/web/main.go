@@ -167,6 +167,9 @@ func (a *AdminServer) RemoveNode(ctx context.Context, req *adminpb.RemoveNodeReq
 		migratedFileCount++
 	}
 
+	// remove the node from the list of registered nodes
+	a.svc.DeregisterNode(req.NodeAddress)
+	log.Printf("Removed node %s from the cluster", req.NodeAddress)
 	return &adminpb.RemoveNodeResponse{MigratedFileCount: migratedFileCount}, nil
 }
 

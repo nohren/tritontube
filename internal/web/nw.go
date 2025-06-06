@@ -255,6 +255,7 @@ func (r *ConsistentHashRing) Remove(nodeAddr string) error {
 			break
 		}
 	}
+	return nil
 }
 
 // given a hashed key h, find the smallest node n where n > h
