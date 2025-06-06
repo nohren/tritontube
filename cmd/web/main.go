@@ -65,7 +65,12 @@ func (a *AdminServer) AddNode(ctx context.Context, req *adminpb.AddNodeRequest) 
 	// get the list of existing nodes in the cluster
 	serverAddrs := a.svc.Ring.List()
 	// Add the new node address to the consistent hash ring
-	a.svc.Ring.Add(req.NodeAddress)
+	err := a.svc.Ring.Add(req.NodeAddress)
+	if err != nil {
+		return &adminpb.AddNodeResponse{MigratedFileCount: 0}, err
+	}
+	//add its gRPC stub and dial
+	a.svc.RegisterNode(req.NodeAddress)
 
 	if len(serverAddrs) == 0 {
 		return nil, fmt.Errorf("no existing nodes in the cluster to migrate from")
@@ -122,9 +127,6 @@ func (a *AdminServer) RemoveNode(ctx context.Context, req *adminpb.RemoveNodeReq
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	//remove the node address from the consistent hash ring
-	//a.svc.Ring.Remove(req.NodeAddress)
-
 	// read all names from the videoId filename and data from the server being shut down
 	chunkNames, err := a.svc.ListChunkNames(req.NodeAddress)
 	if err != nil {
@@ -132,7 +134,10 @@ func (a *AdminServer) RemoveNode(ctx context.Context, req *adminpb.RemoveNodeReq
 	}
 	//remove the node from the consistent hash ring
 	//this ring is how video chunks find a storage home
-	a.svc.Ring.Remove(req.NodeAddress)
+	err = a.svc.Ring.Remove(req.NodeAddress)
+	if err != nil {
+		return &adminpb.RemoveNodeResponse{MigratedFileCount: 0}, err
+	}
 
 	// start migration process
 	// read from node being removed, write to new node, delete from node being removed

@@ -13,6 +13,9 @@ import (
 	"sync"
 	storagepb "tritontube/internal/proto/storage"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"google.golang.org/grpc"
 )
 
@@ -28,8 +31,9 @@ type ConsistentHashRing struct {
 // NWVideoContentService implements VideoContentService using a network of nodes.
 type NWVideoContentService struct {
 	Ring         *ConsistentHashRing
-	storageConns map[string]storagepb.StorageServiceClient
-	mu           sync.Mutex // To protect concurrent access to storageConns
+	storageConns map[string]storagepb.StorageServiceClient //gRPC client stubs for each storage node
+	grpcConns    map[string]*grpc.ClientConn               // gRPC connections to each storage node
+	mu           sync.Mutex                                // To protect concurrent access to storageConns
 }
 
 // Uncomment the following line to ensure NetworkVideoContentService implements VideoContentService
@@ -60,6 +64,7 @@ func NewNWVideoContentService(contentOptions string) *NWVideoContentService {
 
 	//dial each node once and store the client stub
 	conns := make(map[string]storagepb.StorageServiceClient, len(nodeAddrs))
+	grpcConns := make(map[string]*grpc.ClientConn, len(nodeAddrs))
 	for _, addr := range nodeAddrs {
 		//var opts []grpc.DialOption - no need for secure connection in this example
 		clientConn, err := grpc.NewClient(addr, grpc.WithInsecure())
@@ -68,14 +73,44 @@ func NewNWVideoContentService(contentOptions string) *NWVideoContentService {
 		}
 		// give grpc the conn, get the stub where we can call gRPC methods on that server
 		conns[addr] = storagepb.NewStorageServiceClient(clientConn)
+		grpcConns[addr] = clientConn // Store the gRPC connection for later use
 	}
 
 	//dial each node once and store the client stub
 	return &NWVideoContentService{
 		Ring:         ring,
-		storageConns: conns, // Store the gRPC clients for each node
+		storageConns: conns,     // Store the gRPC clients for each node
+		grpcConns:    grpcConns, // Store the gRPC connections for each node
 	}
 }
+
+// register corresponding gRPC server and add stub to the map
+func (s *NWVideoContentService) RegisterNode(nodeAddr string) {
+	//var opts []grpc.DialOption - no need for secure connection in this example
+	clientConn, err := grpc.NewClient(nodeAddr, grpc.WithInsecure())
+	if err != nil {
+		panic(fmt.Sprintf("NWVideoContentService: failed to dial node %s: %v", nodeAddr, err))
+	}
+	// add to the map key: nodeAddr, value: gRPC client stub
+	s.mu.Lock() // lock the mutex to protect concurrent access
+	defer s.mu.Unlock()
+	s.storageConns[nodeAddr] = storagepb.NewStorageServiceClient(clientConn)
+	s.grpcConns[nodeAddr] = clientConn // Store the gRPC connection for later use
+}
+
+// DeregisterNode closes its gRPC connection
+func (s *NWVideoContentService) DeregisterNode(nodeAddr string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if clientConn, ok := s.grpcConns[nodeAddr]; ok {
+		clientConn.Close()            // actually close the network connection
+		delete(s.grpcConns, nodeAddr) // remove from your map
+	}
+	delete(s.storageConns, nodeAddr)
+}
+
+// Add the new node address to the consistent hash ring}
 
 func (s *NWVideoContentService) DeleteFile(videoId string, filename string, nodeAddr string) error {
 	//get the gRPC server stub
@@ -185,27 +220,32 @@ func hashStringToUint64(s string) uint64 {
 }
 
 // add a method to the struct consistentHashRing to add nodes.  The paraenthesis and r and pointer to the struct tells us this is a method of the struct we are defining
-func (r *ConsistentHashRing) Add(nodeAddr string) {
+func (r *ConsistentHashRing) Add(nodeAddr string) error {
 	h := hashStringToUint64(nodeAddr) // hash the node address to a uint64
 	r.mu.Lock()                       // lock the mutex to protect concurrent access
 	defer r.mu.Unlock()               // unlock the mutex when the function returns
-	r.index[h] = nodeAddr             // map the hash to the node address
-	r.nodes = append(r.nodes, h)      // add the hash to the nodes slice
+	// If this hash is already in r.index, do nothing
+	if _, exists := r.index[h]; exists {
+		return status.Errorf(codes.AlreadyExists, "node %s already exists in the ring", nodeAddr)
+	}
+	r.index[h] = nodeAddr
+
+	r.nodes = append(r.nodes, h) // add the hash to the nodes slice
 	sort.Slice(r.nodes, func(i, j int) bool {
 		return r.nodes[i] < r.nodes[j] // sort the nodes slice in ascending order for each node hash of type int64
 	})
+	return nil
 }
 
 // remove
-func (r *ConsistentHashRing) Remove(nodeAddr string) {
+func (r *ConsistentHashRing) Remove(nodeAddr string) error {
 	h := hashStringToUint64(nodeAddr) // hash the node address to a uint64
 	r.mu.Lock()                       // not convinced this is needed, since there is only one admin server that modifies the ring
 	// if we have multiple admin servers, i could see the need
 	defer r.mu.Unlock()
 
 	if _, exists := r.index[h]; !exists {
-		fmt.Printf("Cannot remove node. Node %s not found in the ring", nodeAddr)
-		return
+		return status.Errorf(codes.NotFound, "node %s not found in the ring", nodeAddr)
 	}
 	delete(r.index, h)
 	// Remove h from the slice
