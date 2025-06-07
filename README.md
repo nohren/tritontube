@@ -10,16 +10,23 @@ https://docs.google.com/document/d/1izFnibGVxzNRgpKl3RKt6_4gy64cN0ZEX8_GPLniasE/
 
 `go run ./cmd/storage -host localhost -port 8090 "./storage/8090"`
 
-```
+```bash
 mkdir -p storage/8090 storage/8091 storage/8092
 
 go run ./cmd/storage -port 8090 "./storage/8090" # storage 8090
 go run ./cmd/storage -port 8091 "./storage/8091" # storage 8091
 go run ./cmd/storage -port 8092 "./storage/8092" # storage 8092
 
+# with sqlite
 go run ./cmd/web \
     sqlite "./metadata.db" \
     nw     "localhost:8081,localhost:8090,localhost:8091,localhost:8092"
+
+# with etcd distributed fault tolerant metadata key/value store db
+go run ./cmd/web \
+    etcd "127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379" \
+    nw     "localhost:8081,localhost:8090,localhost:8091,localhost:8092"
+
 
 
 ```
