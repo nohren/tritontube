@@ -6,40 +6,7 @@ This is a distributed video service built with Go and gRPC. It supports fault-to
 
 ## Architecture
 
-:::mermaid
-graph TD
-
-    Admin[Admin Server]
-    Web[Web Server]
-    Etcd1[etcd Server 1]
-    Etcd2[etcd Server 2]
-    Etcd3[etcd Server 3]
-    Storage1[Storage Server 1]
-    Storage2[Storage Server 2]
-    Storage3[Storage Server 3]
-
-
-    Admin --> Web
-    Web --> Etcd1
-    Web --> Etcd2
-    Web --> Etcd3
-    Web --> Storage1
-    Web --> Storage2
-    Web --> Storage3
-
-    subgraph etcd Cluster
-        Etcd1
-        Etcd2
-        Etcd3
-    end
-
-    subgraph storage Cluster
-        Storage1
-        Storage2
-        Storage3
-    end
-
-:::
+![Architecture Diagram](images/architecture.png)
 
 ## Distributed Video Storage
 
