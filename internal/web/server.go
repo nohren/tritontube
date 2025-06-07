@@ -4,6 +4,7 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"html/template"
 	"io"
 	"log"
@@ -16,8 +17,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 // admin interface gRPC remote procedure calls for controlling NW video content service servers
@@ -119,10 +118,10 @@ func (s *server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	//record metadata
 	now := time.Now().UTC() // get the current time in UTC, to sync distributed system irrespective of the timezone
 	if err := s.metadataService.Create(videoId, now); err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
-			http.Error(w, "video ID already taken or video already uploaded", http.StatusConflict)
+		if errors.Is(err, ErrVideoExists) {
+			http.Error(w, err.Error(), http.StatusConflict)
 		} else {
-			http.Error(w, "failed to save metadata", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}

@@ -218,7 +218,13 @@ func main() {
 			log.Fatalf("failed to open sqlite store %q: %v", metadataServiceOptions, err)
 		}
 	case "etcd":
-		panic("Lab 9: not implemented")
+		// metadataServiceOptions is your comma separated etcd addresss e.g. "localhost:2379,localhost:2380,localhost:2381"
+		// this is a distributed fault tolerant metadata service
+		metadataService, err = web.NewEtcdVideoMetadataService(metadataServiceOptions)
+		if err != nil {
+			log.Fatalf("failed to open etcd store %q: %v", metadataServiceOptions, err)
+		}
+
 	default:
 		fmt.Println("Error: Unknown metadata service type:", metadataServiceType)
 		return

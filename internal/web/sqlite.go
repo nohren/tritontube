@@ -4,14 +4,21 @@ package web
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
 
-type SQLiteVideoMetadataService struct{
+type SQLiteVideoMetadataService struct {
 	db *sql.DB
 }
+
+var (
+	ErrVideoExists   = errors.New("video already exists")
+	ErrVideoNotFound = errors.New("video not found")
+)
 
 func NewSQLiteVideoMetadataService(dbPath string) (*SQLiteVideoMetadataService, error) {
 	db, err := sql.Open("sqlite3", dbPath)
@@ -33,19 +40,26 @@ func NewSQLiteVideoMetadataService(dbPath string) (*SQLiteVideoMetadataService, 
 }
 
 func (s *SQLiteVideoMetadataService) Create(videoId string, uploadedAt time.Time) error {
-	// Create inserts a new video metadata record into the database. 
-	_,err := s.db.Exec(
+	// Create inserts a new video metadata record into the database.
+	_, err := s.db.Exec(
 		`INSERT INTO videos (id, uploaded_at) VALUES (?, ?)`,
 		videoId, uploadedAt,
 	)
+	if err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+			return ErrVideoExists // If the video already exists, return a specific error
+		} else {
+			return fmt.Errorf("sqlite insert failed: %w", err)
+		}
+	}
 	return err
 }
 func (s *SQLiteVideoMetadataService) List() ([]VideoMetadata, error) {
-   // Query all videos ordered by upload time descending
-   rows, err := s.db.Query(
-       `SELECT id, uploaded_at FROM videos ORDER BY uploaded_at DESC`,
-   )
-	if err != nil {		
+	// Query all videos ordered by upload time descending
+	rows, err := s.db.Query(
+		`SELECT id, uploaded_at FROM videos ORDER BY uploaded_at DESC`,
+	)
+	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
@@ -64,7 +78,8 @@ func (s *SQLiteVideoMetadataService) List() ([]VideoMetadata, error) {
 	}
 	return vids, nil
 }
-//Return a VideoMetadata object associated with the given ID. Return nil if there is no entry associated with the ID.
+
+// Return a VideoMetadata object associated with the given ID. Return nil if there is no entry associated with the ID.
 func (s *SQLiteVideoMetadataService) Read(id string) (*VideoMetadata, error) {
 	row := s.db.QueryRow(
 		`SELECT id, uploaded_at FROM videos WHERE id = ?`,
@@ -76,7 +91,7 @@ func (s *SQLiteVideoMetadataService) Read(id string) (*VideoMetadata, error) {
 	// if there is a row, return the struct
 	var v VideoMetadata
 	if err := row.Scan(&v.Id, &v.UploadedAt); err != nil {
-		return nil, err	
+		return nil, err
 	}
 	return &v, nil
 }
